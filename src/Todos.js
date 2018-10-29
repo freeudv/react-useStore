@@ -1,50 +1,61 @@
-import React, {useState} from 'react';
+import React, {useReducer} from 'react';
 import InputText from './InputText';
 
-export default function Todos() {
-    const [todos, setTodos] = useState([]);
+const initState = [];
 
-    const addTodo = text => setTodos([{text, completed: false}, ...todos]);
-
-    const deleteTodo = i => () =>
-        setTodos(todos.filter((_, index) => index !== i));
-
-    const onClick = i => () => {
-        setTodos(
-            todos.map(
-                (todo, index) =>
-                    index === i
-                        ? {
-                              ...todo,
-                              completed: !todo.completed
-                          }
+const reducer = (state, action) => {
+    switch (action.type) {
+        case 'ADD_TODO':
+            return [{text: action.text, completed: false}, ...state];
+        case 'TOGGLE_TODO':
+            return state.map(
+                (todo, i) =>
+                    action.index === i
+                        ? {...todo, completed: !todo.completed}
                         : todo
-            )
-        );
-    };
+            );
+        case 'DELETE_TODO':
+            return state.filter((_, i) => i !== action.index);
+        case 'RESET_TODO':
+            return initState;
+        default:
+            return state;
+    }
+};
+
+export default function Todos() {
+    const [state, dispatch] = useReducer(reducer, initState);
+
+    const addTodo = text => dispatch({type: 'ADD_TODO', text});
+    const deleteTodo = index => () => dispatch({type: 'DELETE_TODO', index});
+    const onToggle = index => () => dispatch({type: 'TOGGLE_TODO', index});
+    const onReset = () => dispatch({type: 'RESET_TODO'});
 
     return (
         <div>
             <InputText addTodo={addTodo} />
             <div>
-                {todos.map(({text, completed}, i) => (
-                    <div key={`${text}${i}`} style={{cursor: 'pointer'}}>
+                {state.map(({text, completed}, index) => (
+                    <div key={`${text}${index}`} style={{cursor: 'pointer'}}>
                         <span
-                            onClick={onClick(i)}
+                            onClick={onToggle(index)}
                             style={{
                                 textDecoration: completed ? 'line-through' : ''
                             }}
                         >
                             {text}
                         </span>
-                        <span onClick={deleteTodo(i)} style={{color: 'red'}}>
+                        <span
+                            onClick={deleteTodo(index)}
+                            style={{color: 'red'}}
+                        >
                             {' '}
                             x
                         </span>
                     </div>
                 ))}
             </div>
-            <button onClick={() => setTodos([])}>reset</button>
+            <button onClick={onReset}>reset</button>
         </div>
     );
 }
